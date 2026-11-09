@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/app_state.dart';
 import '../core/fhir.dart';
 import '../core/rbac.dart';
 import '../core/vault.dart';
@@ -27,6 +28,7 @@ class SettingsScreen extends StatelessWidget {
               title: Text(s.user.name),
               subtitle: Text('Role: ${s.user.role.label} · permissions: ${Rbac.matrix[s.user.role]!.map((p) => p.name).join(', ')}'),
             ),
+            _LicenceTile(s: s),
             const Divider(),
             ListTile(
               leading: Icon(ledgerBreak == -1 && auditBreak == -1 ? Icons.verified_user : Icons.gpp_bad,
@@ -125,6 +127,7 @@ class SettingsScreen extends StatelessWidget {
                 await guarded(context, () async {
                   final data = await Vault.importBackup(blob, pass);
                   s.loadJson(data);
+                  await s.reloadLicence();
                   s.log('backup-restored', 'vault');
                   await s.commit();
                 }, success: 'Restored.');
@@ -137,6 +140,9 @@ class SettingsScreen extends StatelessWidget {
               onTap: () async {
                 final ok = await promptText(context, 'Type ERASE to confirm');
                 if (ok != 'ERASE' || !context.mounted) return;
+                try {
+                  await s.removeLicence().timeout(const Duration(seconds: 10));
+                } catch (_) {}
                 await svc.vault.destroy();
                 await svc.pin.clear();
                 s.clearAll();
@@ -189,6 +195,75 @@ class AuditScreen extends StatelessWidget {
             trailing: Text(a.hash.substring(0, 8), style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
           );
         },
+      ),
+    );
+  }
+}
+
+class _LicenceTile extends StatelessWidget {
+  const _LicenceTile({required this.s});
+  final AppState s;
+
+  String _summary() {
+    final l = s.licence;
+    if (s.settings.licenceKey.isEmpty || l == null) {
+      return 'Synthetic demo only. Enter your clinic\'s licence key to record real patients.';
+    }
+    if (!s.licensed) {
+      return 'Licence ${l.status == 'inactive' ? 'inactive' : 'expired'}. Ask your clinic administrator to renew, then tap Refresh.';
+    }
+    final until = l.expiresAt == null ? '' : ' until ${fmtTime(l.expiresAt!)}';
+    return '${l.status == 'trialing' ? 'Free trial' : 'Active'}$until · ${l.devicesUsed}/${l.seats} seat(s) in use';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasKey = s.settings.licenceKey.isNotEmpty;
+    return ListTile(
+      leading: Icon(s.licensed ? Icons.verified_user : Icons.verified_user_outlined, color: s.licensed ? Colors.teal : null),
+      title: const Text('Licence'),
+      subtitle: Text(_summary()),
+      onTap: () => showModalBottomSheet<void>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(
+              leading: const Icon(Icons.key),
+              title: Text(hasKey ? 'Change licence key' : 'Enter licence key'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final key = await promptText(context, 'Clinic licence key', hint: 'CB-XXXX-XXXX-XXXX-XXXX');
+                if (key == null || !context.mounted) return;
+                await guarded(context, () => s.activateLicence(key), success: 'Licence activated on this device.');
+              },
+            ),
+            if (hasKey)
+              ListTile(
+                leading: const Icon(Icons.refresh),
+                title: const Text('Refresh licence'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await guarded(context, () => s.refreshLicence(), success: 'Licence refreshed.');
+                },
+              ),
+            if (hasKey)
+              ListTile(
+                leading: const Icon(Icons.phonelink_erase),
+                title: const Text('Remove licence from this device'),
+                subtitle: const Text('Frees the seat for another clinician.'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await guarded(context, () => s.removeLicence(), success: 'Licence removed.');
+                },
+              ),
+            const ListTile(
+              dense: true,
+              leading: Icon(Icons.info_outline),
+              title: Text('Licences are issued to your clinic by RED REISHI LLC. Only the licence key and a random '
+                  'install id are sent to the licence server; no patient information is ever sent.'),
+            ),
+          ]),
+        ),
       ),
     );
   }

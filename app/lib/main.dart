@@ -17,6 +17,10 @@ Future<void> main() async {
   final state = AppState(persist: vault.save);
   final saved = await vault.load();
   if (saved != null) state.loadJson(saved);
+  await state.reloadLicence();
+  if (state.licence?.needsRefresh(DateTime.now()) ?? state.settings.licenceKey.isNotEmpty) {
+    unawaited(state.refreshLicence().catchError((_) => null));
+  }
   final pin = PinGuard(secrets);
   final bio = BiometricGate();
   runApp(ClinicBridgeApp(

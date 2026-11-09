@@ -186,16 +186,26 @@ section(d, 'Full description', para=(
     'ClinicBridge AI is a communication and documentation tool for healthcare professionals. It does not diagnose, '
     'prescribe or replace clinical judgement or qualified interpreters.'))
 section(d, 'Apple App Privacy (“nutrition label”)', [
-    'Data collected by RED REISHI LLC: None. All patient and clinician data stays encrypted on the device.',
+    'Data collected by RED REISHI LLC: Identifiers → Device ID (a random install id, only when a clinic licence key is entered), '
+    'used for App Functionality (licence seat counting); not used for tracking. All patient and clinician data stays encrypted on the device.',
     'Tracking: No. Third-party advertising/analytics SDKs: none.',
     'Note: on-device ML Kit downloads language models from Google; no patient text is sent.',
 ])
 section(d, 'Google Play Data safety', [
     'Data shared with third parties: No.',
-    'Data collected: No (data processed only on device; not transmitted to developer).',
-    'Encrypted in transit: N/A (no transmission of user data). Users can request deletion: Yes — in-app “Erase all data”.',
+    'Data collected: Yes — Device or other IDs (random install id, sent with the clinic licence key only when a licence is activated); '
+    'purpose: App functionality. No health, personal or patient data is collected; clinical data is processed only on device.',
+    'Encrypted in transit: Yes (HTTPS). Users can request deletion: Yes — Settings → Licence → Remove licence, or in-app “Erase all data”.',
     'Health apps declaration: Clinical / healthcare-provider workflow tool; not a medical device.',
-    'Permissions: Microphone (speech-to-text for interpretation), Biometric (unlock), Internet (download translation language models only).',
+    'Permissions: Microphone (speech-to-text for interpretation), Biometric (unlock), Internet (translation language models and clinic licence check).',
+])
+section(d, 'Pricing and licensing (outside the app stores)', [
+    'App download is free in both stores; the synthetic demo is always free.',
+    'Clinics buy clinician seats on the RED REISHI LLC website via Stripe Checkout: US$49 per clinician per month or US$490 per year, '
+    '14-day free trial; enterprise pricing by quote. One seat = one activated clinician device.',
+    'No purchase, price or purchase link appears inside the app. Clinicians enter a licence key from their organisation '
+    '(Settings → Licence), consistent with Apple guideline 3.1.3(b)/(f) and Google Play policy for enterprise / B2B services.',
+    'Reviewers: the synthetic demo needs no licence. A test licence key can be supplied in the review notes if requested.',
 ])
 section(d, 'Review notes for Apple / Google', para=(
     'On first launch choose “Load synthetic demo data”, set PIN 147258, select “Dr. Ada Okafor (Physician)”. '

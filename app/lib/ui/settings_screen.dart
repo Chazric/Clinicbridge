@@ -147,7 +147,7 @@ class SettingsScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.policy_outlined),
               title: const Text('Privacy policy'),
-              onTap: () => launchUrl(Uri.parse('https://chazric.github.io/ClinicBridge/privacy.html')),
+              onTap: () => launchUrl(Uri.parse('https://chazric.github.io/Clinicbridge/privacy.html')),
             ),
             ListTile(
               leading: const Icon(Icons.mail_outline),

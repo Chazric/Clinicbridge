@@ -163,7 +163,7 @@ section(d, 'Common', [
     ('Age rating:', '17+ (iOS: Medical/Treatment Information) / Play: Everyone with medical content — target audience: healthcare professionals 18+'),
     ('Price:', 'Free (enterprise licences sold separately)'),
     ('Support:', 'redreishilife+clinicbridge@gmail.com'),
-    ('Privacy policy URL:', 'https://chazric.github.io/ClinicBridge/privacy.html (host the included privacy.html)'),
+    ('Privacy policy URL:', 'https://chazric.github.io/Clinicbridge/privacy.html (host the included privacy.html)'),
     ('Keywords (iOS, 100):', 'clinical,handoff,SBAR,IPASS,interpreter,nurse,doctor,medical translation,FHIR,patient safety'),
 ])
 section(d, 'Full description', para=(

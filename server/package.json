@@ -1,0 +1,20 @@
+{
+  "name": "clinicbridge-billing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ClinicBridge AI billing server: Stripe Checkout for per-clinician seats and signed device licences. Holds the Stripe secret key; the app never does. No patient data is ever sent here.",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test",
+    "keygen": "node src/keygen.js"
+  },
+  "dependencies": {
+    "express": "4.21.2",
+    "stripe": "17.7.0"
+  }
+}

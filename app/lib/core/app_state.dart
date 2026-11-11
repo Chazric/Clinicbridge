@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import 'fhir.dart';
 import 'handoff.dart';
+import 'licence.dart';
 import 'ledger.dart';
 import 'models.dart';
 import 'rbac.dart';
@@ -16,7 +17,11 @@ class AppSettings {
     this.fhirProfile = FhirProfile.baseR4,
     this.interpreterServicePhone = '',
     this.autoLockMinutes = 2,
-  });
+    this.licenceKey = '',
+    this.licenceToken = '',
+    this.licenceSig = '',
+    String? deviceId,
+  }) : deviceId = deviceId == null || deviceId.isEmpty ? newDeviceId() : deviceId;
 
   /// Closed encounters older than this are purged from the device.
   int retentionDays;
@@ -26,11 +31,23 @@ class AppSettings {
   String interpreterServicePhone;
   int autoLockMinutes;
 
+  /// Clinic licence key and the last server-signed licence for this install.
+  String licenceKey;
+  String licenceToken;
+  String licenceSig;
+
+  /// Random per-install id; the only device identifier sent to the licence server.
+  String deviceId;
+
   Map<String, dynamic> toJson() => {
         'retentionDays': retentionDays,
         'fhirProfile': fhirProfile.name,
         'interpreterServicePhone': interpreterServicePhone,
         'autoLockMinutes': autoLockMinutes,
+        'licenceKey': licenceKey,
+        'licenceToken': licenceToken,
+        'licenceSig': licenceSig,
+        'deviceId': deviceId,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
@@ -38,16 +55,29 @@ class AppSettings {
         fhirProfile: FhirProfile.values.firstWhere((p) => p.name == j['fhirProfile'], orElse: () => FhirProfile.baseR4),
         interpreterServicePhone: j['interpreterServicePhone'] ?? '',
         autoLockMinutes: j['autoLockMinutes'] ?? 2,
+        licenceKey: j['licenceKey'] ?? '',
+        licenceToken: j['licenceToken'] ?? '',
+        licenceSig: j['licenceSig'] ?? '',
+        deviceId: j['deviceId'] as String?,
       );
 }
 
 /// Single source of truth for the app. All mutations are permission-checked
 /// and written to the hash-chained audit log.
 class AppState extends ChangeNotifier {
-  AppState({Persist? persist}) : _persist = persist; // ignore: prefer_initializing_formals
+  AppState({Persist? persist, LicenceVerifier? licenceVerifier, LicenceTransport? licenceTransport})
+      : _persist = persist, // ignore: prefer_initializing_formals
+        _verifier = licenceVerifier ?? LicenceVerifier(),
+        _transport = licenceTransport ?? httpLicenceTransport;
 
   static const _uuid = Uuid();
   final Persist? _persist;
+  final LicenceVerifier _verifier;
+  final LicenceTransport _transport;
+
+  /// Verified licence for this device, or null (synthetic demo only).
+  Licence? licence;
+  bool get licensed => licence?.isActiveFor(settings.deviceId, DateTime.now()) ?? false;
 
   final List<Clinician> clinicians = [];
   final List<Patient> patients = [];
@@ -219,6 +249,10 @@ class AppState extends ChangeNotifier {
     required String location,
   }) async {
     Rbac.require(user.role, Permission.addEntry);
+    if (!licensed) {
+      throw LicenceException('A clinic licence is required to record real patients. The synthetic demo stays free. '
+          'Enter your clinic\'s licence key in Settings → Licence.');
+    }
     final p = Patient(
       id: _uuid.v4(),
       mrn: 'CB-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}',
@@ -228,6 +262,7 @@ class AppState extends ChangeNotifier {
       sex: sex,
       preferredLanguage: preferredLanguage,
       interpreterNeeded: interpreterNeeded,
+      synthetic: false,
     );
     patients.add(p);
     final enc = Encounter(
@@ -471,6 +506,56 @@ class AppState extends ChangeNotifier {
     settings = AppSettings();
     currentUser = null;
     notifyListeners();
+  }
+
+  // ---------- licence ----------
+  /// Re-verifies the stored signed licence (offline); call after loading or restoring.
+  Future<void> reloadLicence() async {
+    final t = settings.licenceToken, sig = settings.licenceSig;
+    licence = t.isEmpty || sig.isEmpty ? null : await _verifier.verify(t, sig);
+    notifyListeners();
+  }
+
+  /// Activates (or refreshes) this device against the clinic licence key; uses one seat.
+  Future<Licence> activateLicence(String key) async {
+    final k = key.trim().toUpperCase();
+    if (!RegExp(r'^CB(-[A-Z2-9]{4}){4}$').hasMatch(k)) {
+      throw LicenceException('Licence keys look like CB-XXXX-XXXX-XXXX-XXXX.');
+    }
+    final r = await _transport('/v1/billing/activate', {'licence_key': k, 'device_id': settings.deviceId});
+    final token = r['token'] as String? ?? '', sig = r['sig'] as String? ?? '';
+    final l = await _verifier.verify(token, sig);
+    if (l == null || l.device != settings.deviceId) {
+      throw LicenceException('The licence server response could not be verified.');
+    }
+    settings
+      ..licenceKey = k
+      ..licenceToken = token
+      ..licenceSig = sig;
+    licence = l;
+    log('licence-activated', 'licence', '${l.status}, ${l.devicesUsed}/${l.seats} seats');
+    await commit();
+    return l;
+  }
+
+  Future<Licence?> refreshLicence() async {
+    if (settings.licenceKey.isEmpty) return null;
+    return activateLicence(settings.licenceKey);
+  }
+
+  /// Frees this device's seat. Records already on the device are kept, but no new
+  /// real-patient encounters can be created until a licence is entered again.
+  Future<void> removeLicence() async {
+    if (settings.licenceKey.isNotEmpty) {
+      await _transport('/v1/billing/deactivate', {'licence_key': settings.licenceKey, 'device_id': settings.deviceId});
+    }
+    settings
+      ..licenceKey = ''
+      ..licenceToken = ''
+      ..licenceSig = '';
+    licence = null;
+    log('licence-removed', 'licence');
+    await commit();
   }
 
   Future<void> updateSettings(void Function(AppSettings s) change) async {

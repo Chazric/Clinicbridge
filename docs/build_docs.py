@@ -164,6 +164,8 @@ section(d, 'Common', [
     ('Price:', 'Free (enterprise licences sold separately)'),
     ('Support:', 'redreishilife+clinicbridge@gmail.com'),
     ('Privacy policy URL:', 'https://chazric.github.io/Clinicbridge/privacy.html (host the included privacy.html)'),
+    ('Support URL:', 'https://chazric.github.io/Clinicbridge/support.html'),
+    ('Terms of Service URL:', 'https://chazric.github.io/Clinicbridge/terms.html'),
     ('Keywords (iOS, 100):', 'clinical,handoff,SBAR,IPASS,interpreter,nurse,doctor,medical translation,FHIR,patient safety'),
 ])
 section(d, 'Full description', para=(

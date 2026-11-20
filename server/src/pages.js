@@ -14,7 +14,7 @@ input[type=email],input[type=number],input[type=text]{width:100%;box-sizing:bord
 button{margin-top:16px;width:100%;padding:14px;border:0;border-radius:12px;background:#14b8a6;color:#04223a;font-weight:700;font-size:16px;cursor:pointer}
 .key{font:700 24px ui-monospace,monospace;letter-spacing:2px;background:#04223a;padding:16px;border-radius:10px;text-align:center;color:#5eead4;user-select:all}
 small,.muted{color:#94a3b8}a{color:#5eead4}.err{color:#fca5a5}</style></head><body><main>${body}
-<p class="muted"><small>RED REISHI LLC · <a href="mailto:${SUPPORT}">${SUPPORT}</a> · <a href="https://chazric.github.io/Clinicbridge/privacy.html">Privacy</a><br>
+<p class="muted"><small>RED REISHI LLC · <a href="mailto:${SUPPORT}">${SUPPORT}</a> · <a href="https://chazric.github.io/Clinicbridge/support.html">Support</a> · <a href="https://chazric.github.io/Clinicbridge/terms.html">Terms</a> · <a href="https://chazric.github.io/Clinicbridge/privacy.html">Privacy</a><br>
 Billing is handled by Stripe. No patient information is ever sent to this site.</small></p></main></body></html>`;
 
 export const pricingPage = () => page('ClinicBridge AI — clinician licences', `
@@ -26,7 +26,7 @@ The synthetic demo in the app is always free; a licence lets a clinician record 
 <label for="seats">Clinicians (1 seat = 1 clinician device, up to ${MAX_SEATS})</label><input id="seats" name="seats" type="number" min="1" max="${MAX_SEATS}" value="1" required>
 <label for="email">Billing email</label><input id="email" name="email" type="email" required autocomplete="email">
 <button type="submit">Start ${TRIAL_DAYS}-day free trial</button><p id="e" class="err"></p>
-<small>You won't be charged until the ${TRIAL_DAYS}-day trial ends. Cancel anytime from "Manage subscription".</small></form>
+<small>You won't be charged until the ${TRIAL_DAYS}-day trial ends; the subscription then renews automatically until cancelled. Cancel anytime from "Manage subscription". By starting a trial you agree to the <a href="https://chazric.github.io/Clinicbridge/terms.html">Terms of Service</a>.</small></form>
 <div class="card"><h2>Hospitals and health systems</h2><p>More than ${MAX_SEATS} clinicians, EHR integration, SSO or a BAA/DPA: <a href="mailto:${SUPPORT}?subject=ClinicBridge%20enterprise">contact us for enterprise pricing</a>.</p></div>
 <p><a href="/manage">Manage an existing subscription</a></p>
 <script>document.getElementById('f').onsubmit=async function(ev){ev.preventDefault();var e=document.getElementById('e');e.textContent='';
